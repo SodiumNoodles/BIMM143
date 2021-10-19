@@ -1,0 +1,166 @@
+---
+title: "Data Visualization Lab"
+author: "Wai Lam Adele Hong A15999023"
+date: "10/13/2021"
+output: pdf_document
+---
+
+Install the package ggplot2.
+```{r}
+# install.packages("ggplot2")
+```
+Anytime I want to use this package, I need to load it.
+```{r}
+library(ggplot2)
+```
+
+Quick base R Plot - Cars
+```{r}
+View(cars)
+plot(cars)
+# This is NOT ggplot. It's only a simple plot.
+```
+
+Let's make our first ggplot. We need data + aes + geoms (data, aesthetic, geometry).
+```{r}
+ggplot(data=cars) + aes(x=speed, y=dist) + geom_point()
+# "aes" is x and y axes. & visuals. "geom" is type of plot (how it's plotted, e.g point, line, bar, etc.)
+
+p <- ggplot(data=cars) + aes(x=speed, y=dist) + geom_point()
+
+# Add a line with geom_line
+p + geom_line()
+p + geom_smooth()
+# Code below shows trendline ("lm" means linear model)
+p + geom_smooth(method="lm")
+```
+
+--------------------------------------------
+Read in our drug expression data
+```{r}
+url <- "https://bioboot.github.io/bimm143_S20/class-material/up_down_expression.txt"
+genes <- read.delim(url)
+head(genes)
+```
+
+Q. How many genes are there?
+```{r}
+nrow(genes)
+```
+Q. How many columns and what are the names?
+```{r}
+ncol(genes)
+colnames(genes)
+```
+
+Q. How many "up" regulated genes?
+```{r}
+table(genes$State)
+# For a summary of data frame, use table() function
+```
+
+Q. Using your values above and 2 significant figures, what fraction of total genes is up regulated in this dataset?
+```{r}
+round((table(genes$State) / nrow(genes)) * 100, 2)
+# Each value for State divided by the total # of genes. The "2" at the end indicates how many decimals  to round it to.
+```
+
+Let's make our first plot attempt.
+NOTE: if we used the variable "p", it would override previous command regarding "p" (storing obj in "p")
+```{r}
+g <- ggplot(data=genes) + aes(x=Condition1, y=Condition2, col=State) +geom_point()
+# col=State color-codes based on types of State.
+
+g
+
+# Change colors
+g + scale_color_manual(values=c("blue", "gray", "red")) +
+  labs(title="Gene expression changes", x="Control (no drug)", y="Drug Treatment") + theme_bw()
+# With "labs() function, we can add title, axis titles, legends, etc.
+# theme_bw function changes theme of graph
+```
+
+--------------------------------------------
+
+**Optional Section**
+
+Install gapminder package, which is dataset for economic and demographic info of various countries throughout the yrs.
+```{r}
+# install.packages("gapminder")
+library(gapminder)
+gapminder
+```
+
+Install **dplyr code** to focus in on a single year.
+```{r}
+# install.packages("dplyr")
+library(dplyr)
+
+gapminder_2007 <- gapminder %>% filter(year==2007)
+# Filters to contain only the rows with a year value of 2007
+```
+
+Let's make a scatterplot for 2007 data subset.
+```{r}
+ggplot(gapminder_2007) +
+  aes(x=gdpPercap, y=lifeExp) +
+  geom_point(alpha=0.5)
+# "alpha=0.5" helps make data points a little more transparent to see overlap more clearly
+```
+
+Add variables to aes, using additional arguments.
+```{r}
+ggplot(gapminder_2007) +
+  aes(x=gdpPercap, y=lifeExp, color=continent, size=pop) +
+  geom_point(alpha=0.5)
+# Each dimension adds a new layer to the plot! Cool!
+```
+
+What happens if we display "pop" using color?
+```{r}
+ggplot(gapminder_2007) + 
+  aes(x = gdpPercap, y = lifeExp, color = pop) +
+  geom_point(alpha=0.8)
+# Since the "pop" data is continuous (as opposed to discrete), it is displayed as a color *spectrum*
+```
+
+When we use size to display "pop", we realize the sizes don't proportionally reflect the population (i.e the sizes are binned by default). To fix this, we use **scale_size_area()** function.
+```{r}
+ggplot(gapminder_2007) + 
+  aes(x = gdpPercap, y = lifeExp, size = pop) +
+  geom_point(alpha=0.5) + 
+  scale_size_area(max_size = 10)
+```
+
+Q. Can you adapt your plot for the year 1957? 
+A. Yes. It's relatively difficult to compare the 2007 plot to the 1957 because they have different scales (i.e x and y axes have different ranges).
+```{r}
+# Don't forget to filter yr 1957 and save to "gapminder_1957"
+gapminder_1957 <- gapminder %>% filter(year==1957)
+ggplot(gapminder_1957) + 
+  aes(x = gdpPercap, y = lifeExp,
+                 size = pop) +
+  geom_point(alpha=0.7) + 
+  scale_size_area(max_size = 15)
+```
+Q. Let's compare them in an easier way; put both years as an input for ggplot. Use **facet_wrap()** function.
+```{r}
+gapminder_1957 <- gapminder %>% filter(year==1957 | year==2007)
+
+ggplot(gapminder_1957) + 
+  geom_point(aes(x = gdpPercap, y = lifeExp, color=continent,
+                 size = pop), alpha=0.7) + 
+  scale_size_area(max_size = 10) +
+  facet_wrap(~year)
+# Notice geom_point could also be written like this ^
+```
+
+```{r}
+ggplot(gapminder) +
+  aes(x=gdpPercap, y=lifeExp) +
+  geom_point()
+# Note: this is also a viable way of writing the code above:
+ggplot(gapminder, aes(gdpPercap, lifeExp)) +
+  geom_point()
+```
+
