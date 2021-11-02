@@ -1,0 +1,197 @@
+---
+title: "Lab10: Halloween candy!"
+author: "Wai Lam Adele Hong A15999023"
+date: "10/28/2021"
+output: html_document
+---
+
+# Importing Candy Data
+
+Here we look at 538 Halloween candy data. 
+```{r}
+url <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/candy-power-ranking/candy-data.csv"
+candy <- read.csv(url, row.names=1)
+head(candy, n=5)
+# "winpercent"= when people are given the choice between 2 candy, how often does the person pick the given candy.
+```
+
+**Q1.** How many different candy types are in this dataset?
+```{r}
+nrow(candy)
+# 85 candy types.
+```
+
+**Q2.** How many fruity candy types are in the dataset?
+```{r}
+# "0" means candy is not fruity, and "1" means candy is fruity.
+table(candy$fruity)
+# or
+sum(candy$fruity)
+# 38 fruity candy!
+```
+
+# What is your favorite candy?
+```{r}
+candy["Welch", ]$winpercent
+# or
+candy["Welch", "winpercent"]
+```
+
+**Q3.** What is your favorite candy in the dataset and what is it’s winpercent value?
+
+My favorite candy is Welch Fruit Snacks, and the winpercent value is 44.38.
+
+**Q4.** What is the winpercent value for “Kit Kat”?
+```{r}
+candy["Kit Kat", "winpercent"]
+# winpercent = 76.77
+```
+
+**Q5.** What is the winpercent value for “Tootsie Roll Snack Bars”?
+```{r}
+candy["Tootsie Roll Snack Bars", "winpercent"]
+# winpercent = 49.65
+```
+
+```{r}
+# install.packages("skimr")
+library("skimr")
+skim(candy)
+# "skim()" function gives you a quick overview of a given dataset. Let’s install this package and try it on our candy data.
+```
+
+**Q6.** Is there any variable/column that looks to be on a different scale to the majority of the other columns in the dataset?
+
+The winpercent looks like it's on a different scale.
+
+**Q7.** What do you think a zero and one represent for the candy$chocolate column?
+
+A zero means that the candy is not a chocolate, and a one means that it is a chocolate.
+
+Let's make a histogram.
+
+**Q8.** Plot a histogram of winpercent values.
+```{r}
+hist(candy$winpercent)
+```
+
+**Q9.** Is the distribution of winpercent values symmetrical?
+
+No, the distribution of winpercent values are slightly skewed right.
+
+**Q10.** Is the center of the distribution above or below 50%?
+
+The center of distribution is below 50%.
+
+**Q11.** On average is chocolate candy higher or lower ranked than fruit candy?
+```{r}
+inds <- as.logical(candy$chocolate)
+chocolate <- candy[inds,]$winpercent
+inds.fruit <- as.logical(candy$fruity)
+fruity <- candy[inds.fruit,]$winpercent
+
+mean(chocolate)
+mean(fruity)
+```
+Chocolate candy is higher ranked than fruit candy.
+
+**Q12.** Is this difference statistically significant?
+```{r}
+t.test(chocolate, fruity)
+```
+Yes, the differentce is statiscally significant because the t-test has a small p-value.
+
+# Overall Candy Rankings
+
+**Q13.** What are the five least liked candy types in this set?
+```{r}
+head(candy[order(candy$winpercent), ], n=5)
+# Nik L Nip, Boston Baked Beans, Chiclets, Super Bubble, and Jawbusters are the least liked candies.
+```
+
+**Q14.** What are the top 5 all time favorite candy types out of this set?
+
+```{r}
+head(candy[order(candy$winpercent, decreasing=TRUE), ], n=5)
+# ReeseÕs Peanut Butter cup, ReeseÕs Miniatures, Twix, Kit Kat, and Snickers are top5 favorite candies.
+```
+
+**Q15.** Make a first barplot of candy ranking based on winpercent values.
+```{r}
+library("ggplot2")
+
+ggplot(candy) + 
+  aes(winpercent, rownames(candy)) +
+  geom_col() +
+  theme(text = element_text(size = 6))
+```
+
+**Q16.** This is quite ugly, use the reorder() function to get the bars sorted by winpercent?
+```{r}
+ggplot(candy) + 
+  aes(winpercent, reorder(rownames(candy),winpercent)) +
+  geom_col() +
+  theme(text = element_text(size = 6))
+```
+Let's add some useful color.
+We start by making a vector of all black values (one for each candy). Then we overwrite chocolate (for chocolate candy), brown (for candy bars) and red (for fruity candy) values.
+```{r}
+# Make a color vector
+my_cols=rep("black", nrow(candy))
+my_cols[as.logical(candy$chocolate)] = "chocolate"
+my_cols[as.logical(candy$bar)] = "brown"
+my_cols[as.logical(candy$fruity)] = "pink"
+
+# Apply color vector
+ggplot(candy) + 
+  aes(winpercent, reorder(rownames(candy),winpercent)) +
+  geom_col(fill = my_cols) +
+  theme(text = element_text(size = 6))
+```
+
+
+
+**Q17.** What is the worst ranked chocolate candy?
+
+The worst ranked chocolate candy is Charleston Chew.
+
+
+
+# Taking a look at pricepercent
+
+What about value for money? What is the the best candy for the least money? Solution: Make a plot of winpercent vs the pricepercent variable.
+```{r}
+ggplot(candy) +
+  aes(winpercent, pricepercent) +
+  geom_point()
+```
+
+Add labels so we know which point is which candy.
+```{r}
+ggplot(candy) +
+  aes(winpercent, pricepercent, label=rownames(candy)) +
+  geom_point() +
+  geom_text()
+```
+
+Let's add some useful color.
+We start by making a vector of all black values (one for each candy). Then we overwrite chocolate (for chocolate candy), brown (for candy bars) and red (for fruity candy) values.
+```{r}
+# Make a color vector
+my_cols=rep("black", nrow(candy))
+my_cols[as.logical(candy$chocolate)] = "chocolate"
+my_cols[as.logical(candy$bar)] = "brown"
+my_cols[as.logical(candy$fruity)] = "pink"
+```
+
+```{r}
+# Apply color vector
+ggplot(candy) +
+  aes(winpercent, reorder(rownames(candy),winpercent)) +
+  geom_point(fill=my_cols)
+```
+
+
+
+
+
