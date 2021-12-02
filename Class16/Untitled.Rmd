@@ -1,0 +1,133 @@
+---
+title: "Class16: RNASeq Mini Project"
+author: "Wai Lam Adele Hong A15999023"
+date: "11/18/2021"
+output: html_document
+---
+
+```{r}
+metaFile <- "GSE37704_metadata.csv"
+countFile <- "GSE37704_featurecounts.csv"
+
+# Import metadata and take a peek
+colData = read.csv(metaFile, row.names=1)
+head(colData)
+```
+
+```{r}
+# Import countdata
+countData = read.csv(countFile, row.names=1)
+head(countData)
+```
+
+**Q1.** Complete the code below to remove the troublesome first column from countData.
+We need to get rid of this funny first column.
+```{r}
+countData <- countData[, -1]
+head(countData)
+#We should have 6 rows and 6 columns! If we run the [, -1] code again and again, each time it will get rid of the first column until you're left with 0 columns. 
+```
+
+```{r}
+# Filter count data where you have 0 read count across all samples.
+countData = countData[___, ]
+head(countData)
+```
+
+**Q2.** Complete the code below to filter countData to exclude genes (i.e. rows) where we have 0 read count across all samples (i.e. columns).
+```{r}
+head(countData)
+countsnozero <- countData[rowSums(countData) !=0,]
+```
+
+```{r}
+# BiocManager::install("DESeq2")
+library(DESeq2)
+dds = DESeqDataSetFromMatrix(countData=countData,
+                             colData=colData,
+                             design=~condition)
+dds = DESeq(dds)
+dds
+```
+
+**Q3.** Call the summary() function on your results to get a sense of how many genes are up or down-regulated at the default 0.1 p-value cutoff.
+
+```{r}
+res = results(dds, contrast=c("condition", "hoxa1_kd", "control_sirna"))
+
+summary(res)
+```
+
+##Volcano Plot
+
+```{r}
+plot( res$log2FoldChange, -log(res$padj) )
+```
+
+**Q4.** Improve this plot by completing the below code, which adds color and axis labels.
+```{r}
+# Make a color vector for all genes
+mycols <- rep("gray", nrow(res) )
+
+# Color red the genes with absolute fold change above 2
+mycols[ abs(res$log2FoldChange) > 2 ] <- "red"
+
+# Color blue those with adjusted p-value less than 0.01
+#  and absolute fold change more than 2
+inds <- (___) & (abs(res$log2FoldChange) > 2 )
+mycols[ inds ] <- "blue"
+
+plot( res$log2FoldChange, -log(res$padj), col=___, xlab="Log2(FoldChange)", ylab="-Log(P-value)" )
+```
+
+
+```{r}
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+columns(org.Hs.eg.db)
+res$symbol <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res),
+                     keytype="ENSEMBL",
+                     column="ENTREZID",
+                     multiVals="first")
+res$entrez = mapIds(org.Hs.eg.db,
+                    keys=row.names(res),
+                    keytype="ENSEMBL",
+                    column="ENTREZID",
+                    multiVals="first")
+
+res$name =   mapIds(org.Hs.eg.db,
+                    keys=row.names(res),
+                    keytype="ENSEMBL",
+                    column="ENTREZID",
+                    multiVals="first")
+
+head(res, 10)
+```
+
+
+
+```{r}
+pca <- prcomp(t(countsnozero))
+mycols <- rep(c("red", "blue"), each=3)
+plot(pca$x[,1:2], col=mycols, pch=16)
+```
+
+```{r}
+# Run in your R console (i.e. not your Rmarkdown doc!)
+# BiocManager::install( c("pathview", "gage", "gageData") )
+
+library(pathview)
+library(gage)
+library(gageData)
+
+# Focus on datasubset of KEGG
+data(kegg.sets.hs)
+data(sigmet.idx.hs)
+
+# Focus on signaling and metabolic pathways only
+kegg.sets.hs = kegg.sets.hs[sigmet.idx.hs]
+
+```
+
+![](hsa04110.pathview.png)
